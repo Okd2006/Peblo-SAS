@@ -7,8 +7,7 @@ import { NoteCard } from "@/components/NoteCard";
 import { TagBadge } from "@/components/ui/TagBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { NotesGridSkeleton } from "@/components/ui/LoadingSkeleton";
-import { Search, X, LayoutGrid, List, ChevronDown } from "lucide-react";
-import { FileText } from "lucide-react";
+import { Search, X, LayoutGrid, List, ChevronDown, Upload, FileText, FileUp } from "lucide-react";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +32,6 @@ export default function NotesPage() {
   }, [search, activeTag, sort]);
 
   useEffect(() => { fetchNotes(); }, [fetchNotes]);
-
   useEffect(() => {
     api.tags.list().then(({ tags }) => setTags(tags)).catch(() => {});
   }, []);
@@ -45,8 +43,7 @@ export default function NotesPage() {
 
     for (const file of files) {
       try {
-        if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
-          // PDF — send to dedicated API route
+        if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
           const token = (() => {
             try { return JSON.parse(localStorage.getItem("peblo-auth") || "{}").state?.token; } catch { return null; }
           })();
@@ -57,12 +54,10 @@ export default function NotesPage() {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
             body: formData,
           });
-          if (!res.ok) throw new Error("PDF parse failed");
-          const { note } = await res.json();
-          toast.success(`Imported "${note.title}"`);
-          if (files.length === 1) { router.push(`/workspace/notes/${note.id}`); return; }
-        } else {
-          // Plain text / markdown
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "PDF parse failed");
+          toast.success(`Imported "${data.note.title}"`);
+          if (files.length === 1) { router.push(`/workspace/notes/${data.note.id}`); return; }        } else {
           const text = await file.text();
           const title = file.name.replace(/\.(txt|md|markdown)$/i, "");
           const content = text.split("\n\n").filter(Boolean)
@@ -71,8 +66,8 @@ export default function NotesPage() {
           toast.success(`Imported "${title}"`);
           if (files.length === 1) { router.push(`/workspace/notes/${note.id}`); return; }
         }
-      } catch {
-        toast.error(`Failed to import ${file.name}`);
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : `Failed to import ${file.name}`);
       }
     }
 
@@ -88,7 +83,7 @@ export default function NotesPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="px-6 py-4 space-y-4 fade-up">
 
-          {/* Search + filters */}
+          {/* Search + filters row */}
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2"
@@ -99,45 +94,56 @@ export default function NotesPage() {
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search notes..."
                 className="w-full pl-9 pr-9 py-2 rounded-lg text-sm outline-none transition-all"
-                style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-primary)",
-                  fontFamily: "Inter, sans-serif",
-                }}
+                style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-primary)", fontFamily: "Inter, sans-serif" }}
               />
               {search && (
-                <button onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                  style={{ color: "var(--text-muted)" }}>
+                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "var(--text-muted)" }}>
                   <X size={13} />
                 </button>
               )}
             </div>
 
             <div className="flex items-center gap-2">
+              {/* PDF / file upload button — always visible here */}
+              <button
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all hover:opacity-80 disabled:opacity-50"
+                style={{ background: "var(--accent-light)", color: "var(--accent)", border: "1px solid var(--accent-mid)" }}
+              >
+                {uploading
+                  ? <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  : <FileUp size={13} />
+                }
+                {uploading ? "Importing…" : "Import PDF"}
+              </button>
+              {/* Hidden file input — accepts PDF, txt, md */}
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".pdf,.txt,.md,.markdown"
+                multiple
+                className="hidden"
+                onChange={handleUpload}
+              />
+
               {/* Sort */}
               <div className="relative">
                 <select value={sort} onChange={e => setSort(e.target.value)}
                   className="appearance-none pl-3 pr-8 py-2 rounded-lg text-sm outline-none cursor-pointer"
-                  style={{
-                    background: "var(--surface)", border: "1px solid var(--border)",
-                    color: "var(--text-secondary)", fontFamily: "Inter, sans-serif",
-                  }}>
+                  style={{ background: "var(--surface)", border: "1px solid var(--border)", color: "var(--text-secondary)", fontFamily: "Inter, sans-serif" }}>
                   <option value="updatedAt">Last edited</option>
                   <option value="createdAt">Created</option>
                   <option value="title">Title A–Z</option>
                 </select>
-                <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                  style={{ color: "var(--text-muted)" }} />
+                <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
               </div>
 
               {/* View toggle */}
               <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--border)" }}>
                 {(["grid", "list"] as const).map(v => (
                   <button key={v} onClick={() => setView(v)}
-                    className={cn("w-8 h-8 flex items-center justify-center transition-colors",
-                      view === v ? "text-white" : "")}
+                    className={cn("w-8 h-8 flex items-center justify-center transition-colors")}
                     style={view === v
                       ? { background: "var(--accent)", color: "white" }
                       : { background: "var(--surface)", color: "var(--text-muted)" }
@@ -160,7 +166,7 @@ export default function NotesPage() {
               ))}
               {activeTag && (
                 <button onClick={() => setActiveTag("")}
-                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md transition-colors hover:opacity-70"
+                  className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md hover:opacity-70"
                   style={{ color: "var(--text-muted)" }}>
                   <X size={10} /> Clear
                 </button>
@@ -173,12 +179,27 @@ export default function NotesPage() {
             {loading ? "Loading..." : `${notes.length} note${notes.length !== 1 ? "s" : ""}`}
           </p>
 
-          {/* Notes */}
+          {/* Notes grid/list */}
           {loading ? (
             <NotesGridSkeleton />
           ) : notes.length === 0 ? (
-            <EmptyState icon={FileText} title="No notes found"
-              description={search || activeTag ? "Try adjusting your search or filters." : "Create your first note to get started."} />
+            <div className="space-y-4">
+              <EmptyState icon={FileText} title="No notes found"
+                description={search || activeTag ? "Try adjusting your search or filters." : "Create your first note or import a PDF to get started."}
+                action={
+                  !search && !activeTag ? (
+                    <button
+                      onClick={() => fileRef.current?.click()}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:opacity-90"
+                      style={{ background: "var(--accent)" }}
+                    >
+                      <Upload size={13} />
+                      Import a file
+                    </button>
+                  ) : undefined
+                }
+              />
+            </div>
           ) : view === "grid" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {notes.map(note => <NoteCard key={note.id} note={note} view="grid" />)}

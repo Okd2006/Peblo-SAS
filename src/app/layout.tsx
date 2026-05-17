@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
 
 export const metadata: Metadata = {
   title: "Peblo Notes — AI-Powered Workspace",
@@ -13,6 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider>
+          <AnimatedBackground />
           {children}
         </ThemeProvider>
         <Toaster

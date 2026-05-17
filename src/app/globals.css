@@ -8,8 +8,8 @@
 :root {
   /* Peblo Design Tokens - Light */
   --background:   #FAFAF9;
-  --surface:      #FFFFFF;
-  --surface-2:    #F5F5F4;
+  --surface:      rgba(255,255,255,0.85);
+  --surface-2:    rgba(245,245,244,0.9);
   --border:       #E7E5E4;
   --border-2:     #D6D3D1;
   --text-primary: #0F172A;
@@ -53,8 +53,8 @@
 
 .dark {
   --background:   #0B1120;
-  --surface:      #111827;
-  --surface-2:    #1F2937;
+  --surface:      rgba(17,24,39,0.85);
+  --surface-2:    rgba(31,41,55,0.9);
   --border:       #1F2937;
   --border-2:     #374151;
   --text-primary: #F8FAFC;
@@ -209,6 +209,12 @@ body {
   transition: background 120ms ease, color 120ms ease;
   text-decoration: none;
   white-space: nowrap;
+}
+
+/* Frosted glass for surfaces that sit over the animated background */
+.glass {
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
 }
 .nav-item:hover {
   background: var(--surface-2);

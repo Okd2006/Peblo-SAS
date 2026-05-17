@@ -4,6 +4,29 @@ import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
+function extractTextFromPdf(buffer: Buffer): Promise<string> {
+  return new Promise((resolve, reject) => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const PDFParser = require("pdf2json");
+    const parser = new PDFParser(null, 1); // 1 = raw text mode
+
+    parser.on("pdfParser_dataError", (err: { parserError: Error }) => {
+      reject(err.parserError);
+    });
+
+    parser.on("pdfParser_dataReady", () => {
+      try {
+        const raw: string = parser.getRawTextContent();
+        resolve(raw);
+      } catch (e) {
+        reject(e);
+      }
+    });
+
+    parser.parseBuffer(buffer);
+  });
+}
+
 export async function POST(req: NextRequest) {
   const payload = getAuthUser(req);
   if (!payload) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -24,33 +47,30 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Use require to avoid static analysis issues with pdf-parse
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require("pdf-parse");
-    const parsed = await pdfParse(buffer);
-
-    const rawText: string = parsed.text || "";
+    const rawText = await extractTextFromPdf(buffer);
     const title = file.name.replace(/\.pdf$/i, "");
 
-    const content = rawText
-      .split(/\n{2,}/)
-      .map((p: string) => p.trim())
-      .filter(Boolean)
-      .map((p: string) => `<p>${p.replace(/\n/g, " ")}</p>`)
-      .join("") || "<p>(Empty PDF)</p>";
+    // Clean up the text and convert to HTML paragraphs
+    const content =
+      rawText
+        .split(/\n{2,}|\f/) // split on double newlines or form feeds (page breaks)
+        .map((p: string) => p.replace(/\n/g, " ").replace(/\s+/g, " ").trim())
+        .filter((p: string) => p.length > 2)
+        .map((p: string) => `<p>${p}</p>`)
+        .join("") || "<p>(No extractable text in this PDF)</p>";
 
     const note = await prisma.note.create({
-      data: {
-        title,
-        content,
-        userId: payload.userId,
-      },
+      data: { title, content, userId: payload.userId },
       include: { tags: true },
     });
 
     return NextResponse.json({ note }, { status: 201 });
   } catch (error) {
     console.error("PDF import error:", error);
-    return NextResponse.json({ error: "Failed to parse PDF" }, { status: 500 });
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    if (msg.includes("XRef") || msg.includes("Invalid") || msg.includes("corrupt")) {
+      return NextResponse.json({ error: "This PDF appears to be corrupted or password-protected" }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Failed to parse PDF — try a different file" }, { status: 500 });
   }
 }

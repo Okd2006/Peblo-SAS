@@ -54,9 +54,8 @@ export default function AppSidebar({ tags = [], activeTag, onTagClick }: AppSide
   };
 
   return (
-    <aside
-      className={cn(
-        "flex flex-col h-full shrink-0 transition-all duration-200",
+    <aside className={cn(
+        "flex flex-col h-full shrink-0 transition-all duration-200 glass",
         collapsed ? "w-14" : "w-56"
       )}
       style={{ background: "var(--surface)", borderRight: "1px solid var(--border)" }}

@@ -29,7 +29,7 @@ export default function TopNavbar({ title, onUpload, showUpload, rightSlot }: To
   }
 
   return (
-    <header className="flex items-center justify-between h-14 px-5 shrink-0"
+    <header className="flex items-center justify-between h-14 px-5 shrink-0 glass"
       style={{ background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
       <div className="flex items-center gap-3">
         {title && (

@@ -1,0 +1,115 @@
+{
+  "POST /api/auth/signup": {
+    "request": {
+      "name": "John Doe",
+      "email": "john@example.com",
+      "password": "securepassword"
+    },
+    "response": {
+      "user": {
+        "id": "cmp5scquk0000aoewo03ajr7q",
+        "name": "John Doe",
+        "email": "john@example.com",
+        "createdAt": "2026-05-14T17:51:03.309Z"
+      },
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    }
+  },
+
+  "POST /api/notes": {
+    "request": {
+      "title": "Sprint Planning",
+      "content": "<p>Discussed UI mockups and API structure.</p>",
+      "tags": ["work", "planning"]
+    },
+    "response": {
+      "note": {
+        "id": "cmp5sd21j0001aoew5kljarp0",
+        "title": "Sprint Planning",
+        "content": "<p>Discussed UI mockups and API structure.</p>",
+        "isArchived": false,
+        "isPublic": false,
+        "shareId": "cmp5sd21j0002aoew0y17oj6n",
+        "userId": "cmp5scquk0000aoewo03ajr7q",
+        "aiSummary": null,
+        "aiActions": null,
+        "aiTitle": null,
+        "aiUsedAt": null,
+        "createdAt": "2026-05-14T17:52:17.815Z",
+        "updatedAt": "2026-05-14T17:52:17.815Z",
+        "tags": [
+          { "id": "cmp5sd21l0003aoewb1qsjnrs", "name": "work" },
+          { "id": "cmp5sd21o0004aoew25asrygt", "name": "planning" }
+        ]
+      }
+    }
+  },
+
+  "POST /api/notes/:id/generate-summary": {
+    "response": {
+      "insights": {
+        "summary": "The sprint planning session covered UI mockup preparation and API structure review, with the team aligning on key deliverables for the upcoming sprint.",
+        "action_items": [
+          "Prepare UI mockups for review",
+          "Review and finalise API structure",
+          "Schedule team sync for sprint kickoff"
+        ],
+        "suggested_title": "Sprint Planning — UI & API Review"
+      }
+    }
+  },
+
+  "POST /api/ai/search": {
+    "request": {
+      "query": "Give me 3 tips for better note-taking",
+      "history": []
+    },
+    "response": {
+      "answer": "Here are 3 tips for better note-taking:\n\n1. **Engage actively** — Don't just transcribe; paraphrase and summarise in your own words to boost retention.\n2. **Structure for clarity** — Use headings, bullet points, and bold text so notes are easy to scan later.\n3. **Review and connect** — Revisit notes shortly after writing to add context and link related ideas."
+    }
+  },
+
+  "GET /api/insights": {
+    "response": {
+      "totalNotes": 14,
+      "archivedNotes": 2,
+      "aiUsageCount": 6,
+      "topTags": [
+        { "name": "work", "count": 5 },
+        { "name": "ideas", "count": 3 },
+        { "name": "planning", "count": 3 },
+        { "name": "design", "count": 2 }
+      ],
+      "weeklyActivity": [
+        { "date": "2026-05-10", "count": 2 },
+        { "date": "2026-05-11", "count": 0 },
+        { "date": "2026-05-12", "count": 3 },
+        { "date": "2026-05-13", "count": 1 },
+        { "date": "2026-05-14", "count": 4 },
+        { "date": "2026-05-15", "count": 2 },
+        { "date": "2026-05-16", "count": 1 }
+      ],
+      "recentNotes": [
+        { "id": "cmp5sd21j...", "title": "Sprint Planning", "updatedAt": "2026-05-16T18:23:33.808Z" },
+        { "id": "cmp5sd22k...", "title": "Design System Notes", "updatedAt": "2026-05-15T14:10:00.000Z" }
+      ]
+    }
+  },
+
+  "GET /api/shared/:shareId": {
+    "response": {
+      "note": {
+        "id": "cmp5sd21j0001aoew5kljarp0",
+        "title": "Sprint Planning",
+        "content": "<p>Discussed UI mockups and API structure.</p>",
+        "isPublic": true,
+        "shareId": "cmp5sd21j0002aoew0y17oj6n",
+        "aiSummary": "Sprint planning covered UI mockups and API structure review.",
+        "aiActions": "[\"Prepare UI mockups\",\"Review API structure\"]",
+        "tags": [{ "id": "...", "name": "work" }],
+        "user": { "name": "John Doe" },
+        "updatedAt": "2026-05-14T17:52:17.815Z"
+      }
+    }
+  }
+}
